@@ -2,11 +2,66 @@
 Helper functions for the Consent application.
 """
 
+import logging
+from urllib.parse import urlencode
+
 from django.apps import apps
+from django.urls import reverse
 
 from consent.models import ProxyDataSharingConsent
 from enterprise.api_client.discovery import get_course_catalog_api_service_client
 from enterprise.utils import get_enterprise_customer
+
+try:
+    from openedx.features.enterprise_support.api import (
+        CONSENT_FAILED_PARAMETER,
+        consent_needed_for_course,
+        enterprise_customer_uuid_for_request,
+    )
+except ImportError:
+    CONSENT_FAILED_PARAMETER = 'consent_failed'
+    consent_needed_for_course = None
+    enterprise_customer_uuid_for_request = None
+
+LOGGER = logging.getLogger(__name__)
+
+
+def get_enterprise_consent_url(request, course_id, user=None, return_to=None, enrollment_exists=False, source='lms'):
+    """
+    Build a URL to redirect the user to the data-sharing consent page for a specific course.
+
+    Arguments:
+        request: Django request object.
+        course_id: Course key/identifier string.
+        user: user to check for consent. If None, uses ``request.user``.
+        return_to: url name for the page to return to after consent is granted; defaults to
+            ``request.path``.
+        enrollment_exists: forwarded to ``consent_needed_for_course``.
+        source: opaque string identifying the caller, recorded on the consent URL.
+    """
+    if consent_needed_for_course is None or enterprise_customer_uuid_for_request is None:
+        return None
+    user = user or request.user
+    LOGGER.info(
+        'Getting enterprise consent url for user [%s] and course [%s].',
+        user.username,
+        course_id,
+    )
+    if not consent_needed_for_course(request, user, course_id, enrollment_exists=enrollment_exists):
+        return None
+    return_path = request.path if return_to is None else reverse(return_to, args=(course_id,))
+    url_params = {
+        'enterprise_customer_uuid': enterprise_customer_uuid_for_request(request),
+        'course_id': course_id,
+        'source': source,
+        'next': request.build_absolute_uri(return_path),
+        'failure_url': request.build_absolute_uri(
+            reverse('dashboard') + '?' + urlencode({CONSENT_FAILED_PARAMETER: course_id})
+        ),
+    }
+    full_url = reverse('grant_data_sharing_permissions') + '?' + urlencode(url_params)
+    LOGGER.info('Redirecting to %s to complete data sharing consent', full_url)
+    return full_url
 
 
 def get_data_sharing_consent(username, enterprise_customer_uuid, course_id=None, program_uuid=None):
