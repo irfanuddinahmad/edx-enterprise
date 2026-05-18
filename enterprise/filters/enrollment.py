@@ -9,6 +9,15 @@ from enterprise.models import EnterpriseCustomerUser
 
 log = logging.getLogger(__name__)
 
+try:
+    from openedx.features.enterprise_support.api import (
+        ConsentApiServiceClient,
+        EnterpriseApiServiceClient,
+    )
+except ImportError:
+    ConsentApiServiceClient = None
+    EnterpriseApiServiceClient = None
+
 
 class EnterpriseEnrollmentPostProcessor(PipelineStep):
     """
@@ -23,11 +32,6 @@ class EnterpriseEnrollmentPostProcessor(PipelineStep):
         """
         Post enterprise enrollment and consent if the user is an enterprise customer user.
         """
-        from openedx.features.enterprise_support.api import (  # pylint: disable=import-outside-toplevel,import-error
-            ConsentApiServiceClient,
-            EnterpriseApiServiceClient,
-        )
-
         enterprise_customer_user = (
             EnterpriseCustomerUser.objects.select_related('enterprise_customer')
             .filter(user=user)
@@ -46,9 +50,10 @@ class EnterpriseEnrollmentPostProcessor(PipelineStep):
                 course_id,
                 consent_granted=True,
             )
-        except Exception:  # pylint: disable=broad-except
+        except EnterpriseApiException:
             log.exception(
-                'Failed to post enterprise course enrollment for user %s in course %s.',
+                "Failed to post enterprise course enrollment for user %s in course %s. "
+                "Proceeding because this filter is fail-open.",
                 username,
                 course_id,
             )
@@ -59,9 +64,10 @@ class EnterpriseEnrollmentPostProcessor(PipelineStep):
                 course_id=course_id,
                 enterprise_customer_uuid=enterprise_customer_uuid,
             )
-        except Exception:  # pylint: disable=broad-except
+        except HTTPError:
             log.exception(
-                'Failed to provide enterprise consent for user %s in course %s.',
+                "Failed to provide enterprise consent for user %s in course %s. "
+                "Proceeding because this filter is fail-open.",
                 username,
                 course_id,
             )
