@@ -18,6 +18,38 @@ Unreleased
 
 * nothing unreleased
 
+[8.0.14] - 2026-05-14
+---------------------
+* feat: Add basic logging for all enterprise filter pipeline steps (ENT-11830)
+
+[8.0.13] - 2026-05-14
+---------------------
+* feat: own OPEN_EDX_FILTERS_CONFIG injection in enterprise and consent plugin_settings (ENT-11830)
+
+[8.0.12] - 2026-05-13
+---------------------
+* fix: dashboard filter step now fetches the live request via crum instead of expecting it in the filter context (ENT-11569)
+
+[8.0.11] - 2026-05-12
+---------------------
+* fix: populate name as blank in Invite Admin list view for pending customer admin (ENT-11811)
+
+[8.0.10] - 2026-05-11
+---------------------
+* feat: account for data sharing consent settings and mark unenrolled courses in admin enrollment viewset
+
+[8.0.9] - 2026-05-07
+---------------------
+* fix: populate name in Invite Admin list view (ENT-11811)
+
+[8.0.8] - 2026-05-06
+---------------------
+* feat: extra logging for enterprise email association pipeline step
+
+[8.0.7] - 2026-05-06
+---------------------
+* feat: add pluggable override for course home progress username obfuscation
+
 [8.0.6] - 2026-05-05
 ---------------------
 * fix: gate plugin_settings on ENABLE_ENTERPRISE_INTEGRATION

@@ -1,8 +1,10 @@
 """
 Pipeline steps for the student dashboard filter.
 """
+import logging
 from typing import Any
 
+from crum import get_current_request
 from openedx_filters.filters import PipelineStep
 
 # These imports will be replaced with internal paths in epic 17 when enterprise_support is
@@ -18,6 +20,8 @@ except ImportError:
     get_enterprise_learner_portal_context = None
     is_enterprise_learner = None
 
+log = logging.getLogger(__name__)
+
 
 class DashboardContextEnricher(PipelineStep):
     """
@@ -30,12 +34,19 @@ class DashboardContextEnricher(PipelineStep):
         """
         Inject enterprise data into the dashboard context.
         """
-        request = context.get('request')
+        log.info(
+            "DashboardContextEnricher running: template_name=%s, context_keys=%s, user_id=%s",
+            template_name,
+            sorted(context.keys()),
+            getattr(context.get("user"), "id", None),
+        )
         user = context.get('user')
         course_enrollments = context.get('course_enrollments', [])
 
         if user is None:
             return {'context': context, 'template_name': template_name}
+
+        request = get_current_request()
 
         enterprise_message = get_dashboard_consent_notification(request, user, course_enrollments)
 

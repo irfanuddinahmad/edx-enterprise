@@ -7,16 +7,20 @@ from openedx_filters.filters import PipelineStep
 
 from enterprise.models import EnterpriseCustomerUser
 
-log = logging.getLogger(__name__)
+from requests.exceptions import HTTPError
 
 try:
     from openedx.features.enterprise_support.api import (
         ConsentApiServiceClient,
+        EnterpriseApiException,
         EnterpriseApiServiceClient,
     )
 except ImportError:
     ConsentApiServiceClient = None
+    EnterpriseApiException = None
     EnterpriseApiServiceClient = None
+
+log = logging.getLogger(__name__)
 
 
 class EnterpriseEnrollmentPostProcessor(PipelineStep):
